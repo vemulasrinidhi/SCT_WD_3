@@ -1,90 +1,105 @@
-const quizData = [
-    {
-        type: "mcq",
-        question: "What is 2 + 2?",
-        options: ["3", "4", "5", "6"],
-        answer: "4"
-    },
-    {
-        type: "mcq",
-        question: "Which language is used for web?",
-        options: ["Python", "Java", "HTML", "C++"],
-        answer: "HTML"
-    },
-    {
-        type: "fill",
-        question: "Fill in the blank: Java is ___ language.",
-        answer: "programming"
-    }
+let board = ["", "", "", "", "", "", "", "", ""];
+let currentPlayer = "X";
+let gameActive = true;
+let mode = "player";
+
+let xScore = 0;
+let oScore = 0;
+let drawScore = 0;
+
+const boardDiv = document.getElementById("board");
+const statusText = document.getElementById("status");
+
+const winPatterns = [
+    [0,1,2],[3,4,5],[6,7,8],
+    [0,3,6],[1,4,7],[2,5,8],
+    [0,4,8],[2,4,6]
 ];
+function createBoard() {
+    boardDiv.innerHTML = "";
+    board.forEach((cell, index) => {
+        const div = document.createElement("div");
+        div.classList.add("cell");
+        if(cell) div.classList.add(cell);
+        div.innerText = cell;
+        div.addEventListener("click", () => handleClick(index));
+        boardDiv.appendChild(div);
+    });
+}
 
-let currentQuestion = 0;
-let score = 0;
+function handleClick(index) {
+    if (board[index] !== "" || !gameActive) return;
 
-const questionEl = document.getElementById("question");
-const optionsEl = document.getElementById("options");
-const fillBlankEl = document.getElementById("fillBlank");
-const resultBox = document.getElementById("result-box");
-const quizBox = document.getElementById("quiz-box");
-const scoreEl = document.getElementById("score");
+    board[index] = currentPlayer;
+    createBoard();
+    checkWinner();
 
-function loadQuestion() {
-    let q = quizData[currentQuestion];
-    questionEl.innerText = q.question;
-
-    optionsEl.innerHTML = "";
-    fillBlankEl.style.display = "none";
-
-    if (q.type === "mcq") {
-        q.options.forEach(option => {
-            let btn = document.createElement("button");
-            btn.innerText = option;
-            btn.onclick = () => selectAnswer(option);
-            optionsEl.appendChild(btn);
-        });
-    } else if (q.type === "fill") {
-        fillBlankEl.style.display = "block";
+    if (mode === "computer" && currentPlayer === "O" && gameActive) {
+        setTimeout(computerMove, 500);
     }
 }
 
-function selectAnswer(selected) {
-    if (selected === quizData[currentQuestion].answer) {
-        score++;
-    }
-    nextQuestion();
+function computerMove() {
+    let empty = board.map((v, i) => v === "" ? i : null).filter(v => v !== null);
+    let move = empty[Math.floor(Math.random() * empty.length)];
+    board[move] = "O";
+    createBoard();
+    checkWinner();
 }
 
-function nextQuestion() {
-    let q = quizData[currentQuestion];
+function checkWinner() {
+    for (let pattern of winPatterns) {
+        let [a,b,c] = pattern;
+        if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+            statusText.innerText = board[a] + " Wins!";
+            gameActive = false;
 
-    if (q.type === "fill") {
-        let userAnswer = fillBlankEl.value.trim().toLowerCase();
-        if (userAnswer === q.answer.toLowerCase()) {
-            score++;
+            if(board[a] === "X") {
+                xScore++;
+                document.getElementById("xScore").innerText = xScore;
+            } else {
+                oScore++;
+                document.getElementById("oScore").innerText = oScore;
+            }
+
+            return;
         }
     }
 
-    currentQuestion++;
-
-    if (currentQuestion < quizData.length) {
-        loadQuestion();
-    } else {
-        showResult();
+    if (!board.includes("")) {
+        statusText.innerText = "Draw!";
+        drawScore++;
+        document.getElementById("drawScore").innerText = drawScore;
+        gameActive = false;
+        return;
     }
+
+    currentPlayer = currentPlayer === "X" ? "O" : "X";
+    statusText.innerText = currentPlayer + "'s Turn";
 }
 
-function showResult() {
-    quizBox.classList.add("hidden");
-    resultBox.classList.remove("hidden");
-    scoreEl.innerText = score + " / " + quizData.length;
+function resetGame() {
+    board = ["", "", "", "", "", "", "", "", ""];
+    currentPlayer = "X";
+    gameActive = true;
+    statusText.innerText = "X's Turn";
+    createBoard();
 }
 
-function restartQuiz() {
-    currentQuestion = 0;
-    score = 0;
-    quizBox.classList.remove("hidden");
-    resultBox.classList.add("hidden");
-    loadQuestion();
+function resetScore() {
+    xScore = 0;
+    oScore = 0;
+    drawScore = 0;
+
+    document.getElementById("xScore").innerText = 0;
+    document.getElementById("oScore").innerText = 0;
+    document.getElementById("drawScore").innerText = 0;
 }
 
-loadQuestion();
+function setMode(selectedMode) {
+    mode = selectedMode;
+    resetGame();
+}
+
+createBoard();
+statusText.innerText = "X's Turn";
